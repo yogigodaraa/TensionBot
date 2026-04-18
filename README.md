@@ -1,145 +1,59 @@
-# Mooring Data Visualization System
+# TensionBot
 
-A comprehensive system for generating and visualizing fake mooring data for hackathon use. This project consists of two main components:
+Fake-mooring-data generator + real-time visualization dashboard. Built as a hackathon companion project for the BHP/UWA work.
 
-- **Backend (Python)**: Data generator and receiver for mooring sensor data
-- **Dashboard (Node.js)**: Real-time visualization dashboard for monitoring mooring data
+## What it does
 
-## Architecture
+Two-part system for demoing mooring sensor analytics when real data isn't available:
 
-```
-bhp-uwa/
-├── backend/           # Python mooring data generator and receiver
-│   ├── src/
-│   └── pyproject.toml
-├── dashboard/         # Node.js real-time dashboard
-│   ├── public/
-│   ├── views/
-│   ├── app.js
-│   └── package.json
-└── README.md
-```
+- **Generator** — Python CLI that produces synthetic oceanographic readings (temperature, salinity, pressure, wave height, current speed) with configurable drift and ranges, sends them over HTTP with retry + exponential backoff.
+- **Dashboard** — Node.js / Express server that receives generated data, stores the last 1000 records in memory, and streams updates to the browser over Socket.io WebSockets.
 
-## Quick Start
+## Tech stack
 
-### Backend Setup (Python)
+**Backend** (`backend/`) — Python 3.8+
+- FastAPI, Uvicorn, Click, Requests
+- Ruff (lint), Tox (test matrix)
 
-1. Navigate to backend directory:
-   ```bash
-   cd backend
-   ```
+**Dashboard** (`dashboard/`) — Node.js
+- Express, Socket.io, Axios, Helmet, compression
 
-2. Install with UV (recommended):
-   ```bash
-   uv tool install -U mooring-data-generator
-   ```
+## Getting started
 
-   Or with pip:
-   ```bash
-   pip install -U mooring-data-generator
-   ```
-
-### Dashboard Setup (Node.js)
-
-1. Navigate to dashboard directory:
-   ```bash
-   cd dashboard
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the dashboard:
-   ```bash
-   npm start
-   ```
-
-## Usage
-
-### Generating Mooring Data
-
-#### Send data via HTTP POST:
-```bash
-mooring-data-generator http://127.0.0.1:8000/api/mooring-data
-```
-
-#### Save data to file:
-```bash
-mooring-data-generator --file output.json
-```
-
-#### Get OpenAPI specification:
-```bash
-mooring-data-generator --openapi > openapi.json
-```
-
-### Testing Data Reception
-
-Start the data receiver to test that data is being sent:
-```bash
-mooring-data-receiver
-```
-
-With custom host and port:
-```bash
-mooring-data-receiver --host 127.0.0.1 --port 5000
-```
-
-### Dashboard
-
-Access the real-time dashboard at:
-```
-http://localhost:3000
-```
-
-The dashboard will display:
-- Real-time mooring sensor data
-- Historical data charts
-- System status and alerts
-- Data flow monitoring
-
-## Development
-
-### Backend Development
+**Generator**
 
 ```bash
 cd backend
-uv sync --all-groups
-uv run ruff format
-uv run ruff check
-uv run tox
+pip install -e .
+mooring-data-generator --help      # send synthetic data
+mooring-data-receiver --help       # test HTTP receiver
 ```
 
-### Dashboard Development
+**Dashboard**
 
 ```bash
 cd dashboard
-npm run dev    # Start with nodemon for auto-reload
-npm test       # Run tests
-npm run lint   # Check code style
+npm install
+npm start                           # http://localhost:3000
 ```
 
-## API Endpoints
+Demo the whole thing:
 
-### Backend (Python)
-- `POST /api/mooring-data` - Receive mooring data
-- `GET /api/openapi` - Get OpenAPI specification
+```bash
+./demo.sh
+```
 
-### Dashboard (Node.js)
-- `GET /` - Dashboard home page
-- `GET /api/status` - System status
-- WebSocket connection for real-time data updates
+## Project structure
 
-## Contributing
+```
+backend/          Python data generator + pyproject.toml
+dashboard/        Express + Socket.io dashboard
+  public/         Static assets
+  views/          Templates
+  app.js          Server entry
+demo.sh           End-to-end demo script
+```
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## Status
 
-## License
-
-This project is licensed under the MIT License.
+Hackathon project. Repo was renamed from `bhp-uwa`. MIT license declared in `pyproject.toml` and README; no top-level LICENSE file.
