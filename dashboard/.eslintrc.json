@@ -11,15 +11,36 @@
   },
   "rules": {
     "no-console": "off",
-    "quotes": ["error", "single"],
-    "semi": ["error", "never"],
-    "indent": ["error", 2],
-    "no-unused-vars": ["warn"],
+    "quotes": [
+      "error",
+      "single"
+    ],
+    "semi": [
+      "error",
+      "never"
+    ],
+    "indent": [
+      "error",
+      2
+    ],
+    "no-unused-vars": [
+      "warn"
+    ],
     "no-undef": "error"
   },
   "ignorePatterns": [
     "node_modules/",
     "dist/",
     "build/"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "test/**/*.js"
+      ],
+      "env": {
+        "jest": true
+      }
+    }
   ]
 }

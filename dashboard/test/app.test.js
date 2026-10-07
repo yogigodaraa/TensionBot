@@ -7,7 +7,7 @@ describe('Mooring Data Dashboard API', () => {
       const response = await request(app)
         .get('/')
         .expect(200)
-      
+
       expect(response.headers['content-type']).toMatch(/text\/html/)
     })
   })
@@ -17,7 +17,7 @@ describe('Mooring Data Dashboard API', () => {
       const response = await request(app)
         .get('/api/status')
         .expect(200)
-      
+
       expect(response.body).toHaveProperty('status', 'running')
       expect(response.body).toHaveProperty('uptime')
       expect(response.body).toHaveProperty('totalReceived')
@@ -61,7 +61,7 @@ describe('Mooring Data Dashboard API', () => {
         .post('/api/mooring-data')
         .send(validData)
         .expect(200)
-      
+
       expect(response.body).toHaveProperty('status', 'success')
       expect(response.body).toHaveProperty('message', 'Mooring data received')
     })
@@ -75,7 +75,7 @@ describe('Mooring Data Dashboard API', () => {
         .post('/api/mooring-data')
         .send(invalidData)
         .expect(400)
-      
+
       expect(response.body).toHaveProperty('status', 'error')
     })
   })
@@ -85,7 +85,7 @@ describe('Mooring Data Dashboard API', () => {
       const response = await request(app)
         .get('/api/recent-data')
         .expect(200)
-      
+
       expect(response.body).toHaveProperty('data')
       expect(response.body).toHaveProperty('total')
       expect(response.body).toHaveProperty('returned')
@@ -98,7 +98,7 @@ describe('Mooring Data Dashboard API', () => {
       const response = await request(app)
         .get('/api/moorings')
         .expect(200)
-      
+
       expect(Array.isArray(response.body)).toBe(true)
     })
   })
