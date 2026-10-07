@@ -1,5 +1,8 @@
 # TensionBot
 
+[![CI](https://github.com/yogigodaraa/TensionBot/actions/workflows/ci.yml/badge.svg)](https://github.com/yogigodaraa/TensionBot/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Fake-mooring-data generator + real-time visualization dashboard. Built as a hackathon companion project for the BHP/UWA work.
 
 ## What it does
@@ -48,12 +51,31 @@ Demo the whole thing:
 ```
 backend/          Python data generator + pyproject.toml
 dashboard/        Express + Socket.io dashboard
-  public/         Static assets
-  views/          Templates
+  views/          dashboard.html
+  test/           Jest + supertest API tests
   app.js          Server entry
 demo.sh           End-to-end demo script
 ```
 
+## Tests
+
+```bash
+cd backend && pip install -e ".[dev]" && pytest && ruff check .
+cd dashboard && npm ci && npm test && npm run lint
+```
+
+## Credits
+
+The generator package in `backend/` (`mooring-data-generator`) declares *BHP UWA* as its author
+and `github.com/bhp-uwa/mooring-data-generator` as its homepage in `pyproject.toml`. It appears to
+be the hackathon-provided generator, adapted here.
+<!-- TODO(yogi): confirm the origin and licence of backend/ and adjust this credit if needed -->
+
+## Related projects
+
+- [bhp](https://github.com/yogigodaraa/bhp): Mooring Portal (Next.js) with a four-pillar data-quality pipeline
+- [MIB](https://github.com/yogigodaraa/MIB): FastAPI tension-forecasting backend with a crew dashboard
+
 ## Status
 
-Hackathon project. Repo was renamed from `bhp-uwa`. MIT license declared in `pyproject.toml` and README; no top-level LICENSE file.
+Hackathon project (prototype). MIT licensed; see [LICENSE](LICENSE).

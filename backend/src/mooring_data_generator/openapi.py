@@ -1,11 +1,11 @@
 """OpenAPI 3.0 specification generator for mooring data format."""
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 def generate_openapi_spec() -> Dict[str, Any]:
     """Generate OpenAPI 3.0 specification for mooring data."""
-    
+
     spec = {
         "openapi": "3.0.3",
         "info": {
@@ -35,7 +35,9 @@ def generate_openapi_spec() -> Dict[str, Any]:
             "/api/mooring-data": {
                 "post": {
                     "summary": "Receive mooring data",
-                    "description": "Endpoint to receive mooring sensor data from data generators",
+                    "description": (
+                        "Endpoint to receive mooring sensor data from data generators"
+                    ),
                     "operationId": "receiveMooringData",
                     "requestBody": {
                         "required": True,
@@ -157,7 +159,9 @@ def generate_openapi_spec() -> Dict[str, Any]:
                         "timestamp": {
                             "type": "string",
                             "format": "date-time",
-                            "description": "ISO 8601 timestamp when the data was collected",
+                            "description": (
+                                "ISO 8601 timestamp when the data was collected"
+                            ),
                             "example": "2024-11-13T10:30:00.000Z"
                         },
                         "sensors": {
@@ -244,7 +248,9 @@ def generate_openapi_spec() -> Dict[str, Any]:
                         "timestamp": {
                             "type": "string",
                             "format": "date-time",
-                            "description": "ISO 8601 timestamp when the reading was taken",
+                            "description": (
+                                "ISO 8601 timestamp when the reading was taken"
+                            ),
                             "example": "2024-11-13T10:30:00.000Z"
                         },
                         "quality": {
@@ -404,5 +410,5 @@ def generate_openapi_spec() -> Dict[str, Any]:
             }
         ]
     }
-    
+
     return spec

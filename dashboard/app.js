@@ -11,8 +11,8 @@ const app = express()
 const server = http.createServer(app)
 const io = socketIo(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
+    origin: '*',
+    methods: ['GET', 'POST']
   }
 })
 
@@ -23,12 +23,12 @@ const HOST = process.env.HOST || '0.0.0.0'
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.socket.io", "https://cdn.jsdelivr.net"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-      fontSrc: ["'self'", "https://cdn.jsdelivr.net"],
-      connectSrc: ["'self'", "ws:", "wss:"],
-      imgSrc: ["'self'", "data:", "https:"]
+      defaultSrc: ['\'self\''],
+      scriptSrc: ['\'self\'', '\'unsafe-inline\'', 'https://cdn.socket.io', 'https://cdn.jsdelivr.net'],
+      styleSrc: ['\'self\'', '\'unsafe-inline\'', 'https://cdn.jsdelivr.net'],
+      fontSrc: ['\'self\'', 'https://cdn.jsdelivr.net'],
+      connectSrc: ['\'self\'', 'ws:', 'wss:'],
+      imgSrc: ['\'self\'', 'data:', 'https:']
     }
   }
 }))
@@ -58,7 +58,7 @@ setInterval(() => {
   const oneMinuteAgo = new Date(now.getTime() - 60000)
   const recentCount = recentData.filter(d => new Date(d.timestamp) > oneMinuteAgo).length
   stats.dataRate = recentCount
-}, 60000)
+}, 60000).unref() // don't keep the process alive on its own (e.g. in tests)
 
 // API Routes
 app.get('/', (req, res) => {
@@ -69,7 +69,7 @@ app.get('/api/status', (req, res) => {
   const uptime = Math.floor((new Date() - stats.startTime) / 1000)
   res.json({
     status: 'running',
-    uptime: uptime,
+    uptime,
     totalReceived: stats.totalReceived,
     connectedClients: connectedClients.size,
     uniqueMoorings: stats.uniqueMoorings.size,
@@ -108,7 +108,7 @@ app.get('/api/moorings', (req, res) => {
       }
     }
   })
-  
+
   // Mark moorings as inactive if not seen in last 5 minutes
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
   Object.values(moorings).forEach(mooring => {
@@ -116,7 +116,7 @@ app.get('/api/moorings', (req, res) => {
       mooring.status = 'inactive'
     }
   })
-  
+
   res.json(Object.values(moorings))
 })
 
@@ -124,7 +124,7 @@ app.get('/api/moorings', (req, res) => {
 app.post('/api/mooring-data', (req, res) => {
   try {
     const data = req.body
-    
+
     // Validate basic structure
     if (!data.mooring_id || !data.timestamp || !data.sensors) {
       return res.status(400).json({
@@ -132,26 +132,26 @@ app.post('/api/mooring-data', (req, res) => {
         message: 'Invalid data format: missing required fields'
       })
     }
-    
+
     // Add reception timestamp
     data.received_at = new Date().toISOString()
-    
+
     // Store data
     recentData.push(data)
     if (recentData.length > MAX_STORED_RECORDS) {
       recentData.shift() // Remove oldest record
     }
-    
+
     // Update statistics
     stats.totalReceived++
     stats.lastReceived = new Date().toISOString()
     stats.uniqueMoorings.add(data.mooring_id)
-    
+
     // Emit to connected clients
     io.emit('newMooringData', data)
-    
+
     console.log(`📊 Received data from ${data.mooring_id} at ${data.timestamp} (${stats.totalReceived} total)`)
-    
+
     res.json({
       status: 'success',
       message: 'Mooring data received',
@@ -171,7 +171,7 @@ app.post('/api/mooring-data', (req, res) => {
 io.on('connection', (socket) => {
   connectedClients.add(socket.id)
   console.log(`🔌 Client connected: ${socket.id} (${connectedClients.size} total)`)
-  
+
   // Send current stats to new client
   socket.emit('stats', {
     totalReceived: stats.totalReceived,
@@ -179,16 +179,16 @@ io.on('connection', (socket) => {
     dataRate: stats.dataRate,
     lastReceived: stats.lastReceived
   })
-  
+
   // Send recent data to new client
   const recentRecords = recentData.slice(-10) // Last 10 records
   socket.emit('recentData', recentRecords)
-  
+
   socket.on('disconnect', () => {
     connectedClients.delete(socket.id)
     console.log(`🔌 Client disconnected: ${socket.id} (${connectedClients.size} remaining)`)
   })
-  
+
   // Handle client requests for historical data
   socket.on('requestData', (params) => {
     const limit = Math.min(params.limit || 100, 500)
@@ -206,7 +206,7 @@ setInterval(() => {
     lastReceived: stats.lastReceived,
     connectedClients: connectedClients.size
   })
-}, 5000) // Every 5 seconds
+}, 5000).unref() // Every 5 seconds
 
 // Error handling
 app.use((err, req, res, next) => {
@@ -234,12 +234,14 @@ process.on('SIGINT', () => {
   })
 })
 
-// Start server
-server.listen(PORT, HOST, () => {
-  console.log(`🚀 Mooring Data Dashboard running at http://${HOST}:${PORT}`)
-  console.log(`📊 Ready to receive data at http://${HOST}:${PORT}/api/mooring-data`)
-  console.log(`🔌 WebSocket support enabled for real-time updates`)
-  console.log('\nPress Ctrl+C to stop')
-})
+// Start server only when run directly (`node app.js`), not when required by tests
+if (require.main === module) {
+  server.listen(PORT, HOST, () => {
+    console.log(`🚀 Mooring Data Dashboard running at http://${HOST}:${PORT}`)
+    console.log(`📊 Ready to receive data at http://${HOST}:${PORT}/api/mooring-data`)
+    console.log('🔌 WebSocket support enabled for real-time updates')
+    console.log('\nPress Ctrl+C to stop')
+  })
+}
 
 module.exports = app
