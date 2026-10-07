@@ -58,7 +58,7 @@ setInterval(() => {
   const oneMinuteAgo = new Date(now.getTime() - 60000)
   const recentCount = recentData.filter(d => new Date(d.timestamp) > oneMinuteAgo).length
   stats.dataRate = recentCount
-}, 60000)
+}, 60000).unref() // don't keep the process alive on its own (e.g. in tests)
 
 // API Routes
 app.get('/', (req, res) => {
@@ -206,7 +206,7 @@ setInterval(() => {
     lastReceived: stats.lastReceived,
     connectedClients: connectedClients.size
   })
-}, 5000) // Every 5 seconds
+}, 5000).unref() // Every 5 seconds
 
 // Error handling
 app.use((err, req, res, next) => {
@@ -234,12 +234,14 @@ process.on('SIGINT', () => {
   })
 })
 
-// Start server
-server.listen(PORT, HOST, () => {
-  console.log(`🚀 Mooring Data Dashboard running at http://${HOST}:${PORT}`)
-  console.log(`📊 Ready to receive data at http://${HOST}:${PORT}/api/mooring-data`)
-  console.log(`🔌 WebSocket support enabled for real-time updates`)
-  console.log('\nPress Ctrl+C to stop')
-})
+// Start server only when run directly (`node app.js`), not when required by tests
+if (require.main === module) {
+  server.listen(PORT, HOST, () => {
+    console.log(`🚀 Mooring Data Dashboard running at http://${HOST}:${PORT}`)
+    console.log(`📊 Ready to receive data at http://${HOST}:${PORT}/api/mooring-data`)
+    console.log(`🔌 WebSocket support enabled for real-time updates`)
+    console.log('\nPress Ctrl+C to stop')
+  })
+}
 
 module.exports = app
