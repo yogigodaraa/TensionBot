@@ -1,19 +1,19 @@
 """Mooring data receiver for testing data transmission."""
 
-import json
 import argparse
+import json
 import signal
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any
 
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse
 import uvicorn
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 
 
 class DataReceiver:
     """HTTP server to receive and display mooring data."""
-    
+
     def __init__(self, format_output: bool = False):
         self.app = FastAPI(
             title="Mooring Data Receiver",
@@ -24,19 +24,22 @@ class DataReceiver:
         self.received_count = 0
         self.setup_routes()
         self.setup_signal_handlers()
-    
+
     def setup_signal_handlers(self):
         """Setup graceful shutdown handlers."""
         signal.signal(signal.SIGINT, self._handle_shutdown)
         signal.signal(signal.SIGTERM, self._handle_shutdown)
-    
+
     def _handle_shutdown(self, signum, frame):
         """Handle shutdown signals."""
-        print(f"\n🛑 Received shutdown signal. Total requests received: {self.received_count}")
-    
+        print(
+            "\n🛑 Received shutdown signal. "
+            f"Total requests received: {self.received_count}"
+        )
+
     def setup_routes(self):
         """Setup API routes."""
-        
+
         @self.app.get("/")
         async def root():
             """Root endpoint with server info."""
@@ -46,12 +49,15 @@ class DataReceiver:
                 "received_count": self.received_count,
                 "timestamp": datetime.utcnow().isoformat() + "Z"
             }
-        
+
         @self.app.get("/health")
         async def health_check():
             """Health check endpoint."""
-            return {"status": "healthy", "timestamp": datetime.utcnow().isoformat() + "Z"}
-        
+            return {
+                "status": "healthy",
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+            }
+
         @self.app.post("/api/mooring-data")
         async def receive_mooring_data(request: Request):
             """Receive mooring data via POST."""
@@ -66,23 +72,28 @@ class DataReceiver:
                         "timestamp": datetime.utcnow().isoformat() + "Z"
                     }
                 )
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as e:
                 self._log_error("Invalid JSON in request body")
-                raise HTTPException(status_code=400, detail="Invalid JSON format")
+                raise HTTPException(
+                    status_code=400, detail="Invalid JSON format"
+                ) from e
             except Exception as e:
                 self._log_error(f"Error processing request: {str(e)}")
-                raise HTTPException(status_code=500, detail="Internal server error")
-        
+                raise HTTPException(
+                    status_code=500, detail="Internal server error"
+                ) from e
+
         @self.app.post("/{path:path}")
         async def catch_all_post(path: str, request: Request):
             """Catch all other POST requests."""
             try:
                 data = await request.json()
                 self._log_request("POST", f"/{path}", data)
-            except:
+            except ValueError:  # body isn't JSON; log it as text
                 body = await request.body()
-                self._log_request("POST", f"/{path}", body.decode('utf-8', errors='ignore'))
-            
+                text = body.decode("utf-8", errors="ignore")
+                self._log_request("POST", f"/{path}", text)
+
             return JSONResponse(
                 status_code=200,
                 content={
@@ -91,13 +102,13 @@ class DataReceiver:
                     "timestamp": datetime.utcnow().isoformat() + "Z"
                 }
             )
-        
+
         @self.app.get("/{path:path}")
         async def catch_all_get(path: str, request: Request):
             """Catch all GET requests."""
             query_params = dict(request.query_params)
             self._log_request("GET", f"/{path}", query_params if query_params else None)
-            
+
             return JSONResponse(
                 status_code=200,
                 content={
@@ -108,16 +119,16 @@ class DataReceiver:
                     "timestamp": datetime.utcnow().isoformat() + "Z"
                 }
             )
-    
+
     def _log_request(self, method: str, path: str, data: Any = None):
         """Log incoming request."""
         self.received_count += 1
         timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
-        
+
         print(f"\n📨 Request #{self.received_count} - {timestamp}")
         print(f"   Method: {method}")
         print(f"   Path: {path}")
-        
+
         if data is not None:
             print("   Body:")
             if self.format_output and isinstance(data, (dict, list)):
@@ -127,9 +138,9 @@ class DataReceiver:
                     print(f"      {line}")
             else:
                 print(f"      {data}")
-        
+
         print("   " + "─" * 50)
-    
+
     def _log_error(self, message: str):
         """Log error message."""
         timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -141,55 +152,57 @@ class DataReceiver:
 def create_parser() -> argparse.ArgumentParser:
     """Create argument parser."""
     parser = argparse.ArgumentParser(
-        description="Receive and display HTTP traffic for testing mooring data transmission",
+        description=(
+            "Receive and display HTTP traffic for testing mooring data transmission"
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Run on default host and port
   mooring-data-receiver
-  
+
   # Run on specific host and port
   mooring-data-receiver --host 127.0.0.1 --port 5000
-  
+
   # Enable formatted output
   mooring-data-receiver --format
-  
+
   # Quiet mode (less verbose)
   mooring-data-receiver --quiet
         """
     )
-    
+
     parser.add_argument(
         '--host',
         default='0.0.0.0',
         help='Host to bind to (default: 0.0.0.0)'
     )
-    
+
     parser.add_argument(
         '--port',
         type=int,
         default=8000,
         help='Port to listen on (default: 8000)'
     )
-    
+
     parser.add_argument(
         '--format',
         action='store_true',
         help='Format JSON request bodies for better readability'
     )
-    
+
     parser.add_argument(
         '--quiet',
         action='store_true',
         help='Reduce verbosity (don\'t show startup messages)'
     )
-    
+
     parser.add_argument(
         '--reload',
         action='store_true',
         help='Enable auto-reload for development'
     )
-    
+
     return parser
 
 
@@ -197,10 +210,10 @@ def main():
     """Main entry point."""
     parser = create_parser()
     args = parser.parse_args()
-    
+
     # Create data receiver
     receiver = DataReceiver(format_output=args.format)
-    
+
     if not args.quiet:
         print("🚀 Starting Mooring Data Receiver")
         print(f"🌐 Listening on: http://{args.host}:{args.port}")
@@ -212,7 +225,7 @@ def main():
         print("   POST /api/mooring-data   - Mooring data endpoint")
         print("   *    /*                  - Catch-all for any other requests")
         print("\n" + "=" * 60)
-    
+
     try:
         uvicorn.run(
             receiver.app,
@@ -228,7 +241,7 @@ def main():
     except Exception as e:
         print(f"❌ Error starting server: {e}")
         return 1
-    
+
     return 0
 
 
